@@ -1,0 +1,27 @@
+---
+- name: Update /etc/hosts with all inventory hosts
+  hosts: ansible_masters
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Gather hostnames and IP addresses from all hosts
+      add_host:
+        name: "{{ inventory_hostname }}"
+        ansible_host: "{{ ansible_host }}"
+      changed_when: false
+
+    - name: Collect host IP mapping
+      set_fact:
+        host_ip_mapping: "{{ host_ip_mapping | default({}) | combine({inventory_hostname: ansible_host}) }}"
+
+    - name: Wait for facts from all hosts
+      meta: flush_handlers
+
+    - name: Update /etc/hosts with all hosts
+      lineinfile:
+        path: /etc/hosts
+        state: present
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
+      loop: "{{ groups['all'] }}"
+      when: hostvars[item].ansible_host is defined

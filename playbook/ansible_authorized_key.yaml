@@ -1,0 +1,11 @@
+---
+- name: Copy public key from controller node to remote nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add the public key to authorized_keys
+      authorized_key:
+        user: ubuntu
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+

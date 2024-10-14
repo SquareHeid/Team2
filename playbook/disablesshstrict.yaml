@@ -1,0 +1,21 @@
+---
+- name: Disable StrictHostKeyChecking on remote nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure the .ssh directory exists
+      file:
+        path: /home/{{ ansible_user }}/.ssh
+        state: directory
+        mode: 0700
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      
+    - name: Add SSH config to disable StrictHostKeyChecking
+      lineinfile:
+        path: /home/{{ ansible_user }}/.ssh/config
+        create: yes
+        line: 'Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null'
+        mode: 0600
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"

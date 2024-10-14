@@ -1,0 +1,32 @@
+---
+- name: Configure Join Commands on Master Node
+  hosts: kubernetes_master
+  become: yes
+  tasks:
+    - name: Retrieve Join Command
+      shell: kubeadm token create --print-join-command
+      register: join_command_raw
+
+    - name: Set Join Command
+      set_fact:
+        join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+- name: Join Worker Nodes
+  hosts: kubernetes_workers
+  become: yes
+  tasks:
+    - name: Get the IP address of the master node
+      set_fact:
+        master_ip: "{{ hostvars['k8s_master'].ansible_host }}"  # This fetches the IP of the master from inventory
+
+    - name: Wait for TCP port 6443 on master to be reachable from worker
+      wait_for:
+        host: "{{ master_ip }}"
+        port: 6443
+        timeout: 60  # Increased timeout to 60 seconds for safety
+
+    - name: Join worker to cluster
+      shell: "{{ hostvars['k8s_master'].join_command }} >> node_joined.log"
+      args:
+        chdir: /home/ubuntu
+        creates: node_joined.log
